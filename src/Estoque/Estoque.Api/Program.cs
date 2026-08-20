@@ -6,8 +6,10 @@ using Korp.Estoque.Infrastructure.Repositories;
 using Korp.Shared.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Microsoft.AspNetCore.Builder;
 
-var builder = WebApplicationBuilder.CreateBuilder(args);
+
+var builder = WebApplication.CreateBuilder(args);
 
 // Configurar Serilog para logging
 builder.Host.UseSerilog((context, configuration) =>
