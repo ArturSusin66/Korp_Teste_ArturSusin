@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Builder;
 using Korp.Estoque.Application.Services;
 using Korp.Estoque.Domain.Repositories;
 using Korp.Estoque.Infrastructure.Data;
