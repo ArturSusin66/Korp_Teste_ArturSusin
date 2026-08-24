@@ -35,7 +35,7 @@ import { Subject, takeUntil } from 'rxjs';
       <!-- Editor de Nota -->
       <div *ngIf="notaAtual" class="form-section nota-editor">
         <div class="nota-header">
-          <h3>Nota Fiscal NF-{{ notaAtual.numero | string }}</h3>
+          <h3>Nota Fiscal NF-{{ notaAtual.numero }}</h3>
           <span class="status" [ngClass]="'status-' + notaAtual.status.toLowerCase()">
             {{ notaAtual.status }}
           </span>

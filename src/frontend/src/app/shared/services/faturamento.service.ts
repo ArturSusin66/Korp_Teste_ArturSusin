@@ -2,14 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { NotaFiscal } from '../models/nota-fiscal.model';
-import { environment } from '../../environments/environment';
-
+import { environment } from '../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class FaturamentoService {
-  private apiUrl = environment.apiUrls.faturamento + '/notas-fiscais';
-
+  private apiUrl = environment.faturamentoApiUrl + '/notas-fiscais';
+  
   constructor(private http: HttpClient) { }
 
   criar(): Observable<NotaFiscal> {

@@ -1,7 +1,7 @@
 using Korp.Estoque.Application.Services;
 using Korp.Estoque.Domain.Repositories;
 using Korp.Estoque.Infrastructure.Data;
-using Korp.Estoque.Infrastructure.Repositories; 
+using Korp.Estoque.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,22 +12,37 @@ var connectionString = builder.Configuration.GetConnectionString("EstoqueDatabas
 builder.Services.AddDbContext<EstoqueDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// 2. Injeção de Dependências das Camadas da Aplicação
+// 2. Injeção de Dependências
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 builder.Services.AddScoped<ProdutoApplicationService>();
+
+// 3. Configurar CORS para o Angular
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// --- CRIAÇÃO DO APP (BUILD) ---
 var app = builder.Build();
 
-// 3. Middlewares e Rotas
+// 4. Middlewares do Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+app.UseRouting(); // Habilita o roteamento do ASP.NET Core
+app.UseCors("AllowAngular");
+app.UseAuthorization();
 app.MapControllers();
 app.Run();
