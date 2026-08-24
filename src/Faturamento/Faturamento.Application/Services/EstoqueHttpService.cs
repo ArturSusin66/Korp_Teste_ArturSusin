@@ -2,6 +2,7 @@ using Korp.Faturamento.Application.Dtos;
 using Korp.Shared.Exceptions;
 using Polly;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Korp.Faturamento.Application.Services;
 
@@ -60,7 +61,13 @@ public class EstoqueHttpService : IEstoqueService
                     $"Falha ao consultar estoque. Status: {response.StatusCode}");
             }
 
-            var produto = await response.Content.ReadAsAsync<ProdutoEstoqueDto>();
+            var produto = await response.Content.ReadFromJsonAsync<ProdutoEstoqueDto>();
+            if (produto == null)
+            {
+                throw new IntegracaoException(
+                    $"Resposta inválida ao consultar produto {codigo}. Conteúdo vazio.");
+            }
+
             _logger.LogInformation("Produto {Codigo} obtido com sucesso. Saldo: {Saldo}", codigo, produto.Saldo);
             return produto;
         }
@@ -108,7 +115,13 @@ public class EstoqueHttpService : IEstoqueService
                     "Serviço de Estoque indisponível. Tente novamente.");
             }
 
-            var produto = await response.Content.ReadAsAsync<ProdutoEstoqueDto>();
+            var produto = await response.Content.ReadFromJsonAsync<ProdutoEstoqueDto>();
+            if (produto == null)
+            {
+                throw new IntegracaoException(
+                    $"Resposta inválida ao reduzir saldo do produto {codigo}. Conteúdo vazio.");
+            }
+
             _logger.LogInformation(
                 "Saldo reduzido com sucesso. Novo saldo: {NovoSaldo}",
                 produto.Saldo);
@@ -122,3 +135,5 @@ public class EstoqueHttpService : IEstoqueService
         }
     }
 }
+
+

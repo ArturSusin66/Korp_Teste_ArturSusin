@@ -2,6 +2,8 @@ using Korp.Faturamento.Application.Dtos;
 using Korp.Faturamento.Domain.Entities;
 using Korp.Faturamento.Domain.Repositories;
 using Korp.Shared.Exceptions;
+using Microsoft.Extensions.Logging;
+
 
 namespace Korp.Faturamento.Application.Services;
 
