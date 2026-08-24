@@ -10,13 +10,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Faturamento.Application/Faturamento.Application.csproj" />
     <ProjectReference Include="../Faturamento.Infrastructure/Faturamento.Infrastructure.csproj" />
     <ProjectReference Include="../../Shared/Shared.csproj" />
+    <ProjectReference Include="..\Faturamento.Domain\Faturamento.Domain.csproj" />
   </ItemGroup>
 
 </Project>

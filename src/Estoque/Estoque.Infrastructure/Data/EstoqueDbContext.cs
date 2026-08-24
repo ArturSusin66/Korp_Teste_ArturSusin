@@ -34,8 +34,7 @@ public class EstoqueDbContext : DbContext
                 .IsRequired();
 
             entity.Property(p => p.CriadoEm)
-                .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
             entity.Property(p => p.AtualizadoEm);
 

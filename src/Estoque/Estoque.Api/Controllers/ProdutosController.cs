@@ -22,16 +22,18 @@ public class ProdutosController : ControllerBase
 
     /// <summary>
     /// Criar novo produto
-    /// </summary>
+        /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<ProdutoResponseDto>> Criar([FromBody] CriarProdutoDto dto)
-    {
-        _logger.LogInformation("Criando novo produto com código: {Codigo}", dto.Codigo);
-        var resultado = await _service.CriarAsync(dto);
-        return CreatedAtAction(nameof(Obter), new { codigo = resultado.Codigo }, resultado);
-    }
+        {
+            _logger.LogInformation("Criando novo produto com código: {Codigo}", dto.Codigo);
+            var resultado = await _service.CriarAsync(dto);
+            
+            // Retorna HTTP 201 com o cabeçalho Location apontando para /api/produtos/{codigo}
+            return CreatedAtAction(nameof(Obter), new { codigo = resultado.Codigo }, resultado);
+        }
 
     /// <summary>
     /// Obter produto por código

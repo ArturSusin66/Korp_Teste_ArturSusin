@@ -21,6 +21,7 @@ public class FaturamentoDbContext : DbContext
         // Configurar entidade NotaFiscal
         modelBuilder.Entity<NotaFiscal>(entity =>
         {
+            entity.ToTable("notas_fiscais");
             entity.HasKey(n => n.Id);
 
             entity.Property(n => n.Numero)
@@ -30,8 +31,7 @@ public class FaturamentoDbContext : DbContext
                 .IsRequired();
 
             entity.Property(n => n.DataEmissao)
-                .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
             entity.Property(n => n.DataFechamento);
 
@@ -53,6 +53,7 @@ public class FaturamentoDbContext : DbContext
         // Configurar entidade ItemNotaFiscal
         modelBuilder.Entity<ItemNotaFiscal>(entity =>
         {
+            entity.ToTable("itens_nota_fiscal");
             entity.HasKey(i => i.Id);
 
             entity.Property(i => i.CodigoProduto)
@@ -68,7 +69,7 @@ public class FaturamentoDbContext : DbContext
 
             entity.Property(i => i.CriadoEm)
                 .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP(6)"); // <-- Ajustado para (6)
         });
     }
 }

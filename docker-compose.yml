@@ -15,8 +15,9 @@ services:
       - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      interval: 5s
+      timeout: 10s
+      retries: 5
     networks:
       - korp-network
 

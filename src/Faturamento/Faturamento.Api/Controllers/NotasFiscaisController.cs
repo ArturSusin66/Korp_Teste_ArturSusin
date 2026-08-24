@@ -8,7 +8,7 @@ namespace Korp.Faturamento.Api.Controllers;
 /// Controller para gerenciamento de notas fiscais
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/notas")]
 public class NotasFiscaisController : ControllerBase
 {
     private readonly NotaFiscalApplicationService _service;

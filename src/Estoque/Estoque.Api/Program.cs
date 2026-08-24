@@ -1,63 +1,33 @@
+using Korp.Estoque.Application.Services;
+using Korp.Estoque.Domain.Repositories;
+using Korp.Estoque.Infrastructure.Data;
+using Korp.Estoque.Infrastructure.Repositories; 
 using Microsoft.EntityFrameworkCore;
-using Korp.StockService.Data;
-using Korp.StockService.Repositories;
-using Korp.StockService.Services;
-using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuração do DbContext
+// 1. Configurar Conexão com MySQL
+var connectionString = builder.Configuration.GetConnectionString("EstoqueDatabase");
+
 builder.Services.AddDbContext<EstoqueDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("EstoqueDatabase"),
-        new MySqlServerVersion(new Version(8, 0, 21))
-    ));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// Configuração de CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAngular",
-        builder =>
-        {
-            builder.WithOrigins("http://localhost:4200")
-                   .AllowAnyHeader()
-                   .AllowAnyMethod();
-        });
-});
+// 2. Injeção de Dependências das Camadas da Aplicação
+builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
+builder.Services.AddScoped<ProdutoApplicationService>();
 
-// Registro de Dependências
-builder.Services.AddScoped<IEstoqueRepository, EstoqueRepository>();
-builder.Services.AddScoped<IEstoqueService, EstoqueService>();
-
-// Controllers
 builder.Services.AddControllers();
-
-// Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Korp.StockService", Version = "v1" });
-});
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// 3. Middlewares e Rotas
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-app.UseCors("AllowAngular");
-app.UseAuthorization();
 app.MapControllers();
-
-// Migrate database
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<EstoqueDbContext>();
-    dbContext.Database.Migrate();
-}
-
 app.Run();

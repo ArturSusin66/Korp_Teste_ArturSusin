@@ -1,16 +1,16 @@
-using Korp.Faturamento.Application.Services;
-using Korp.Faturamento.Domain.Repositories;
-using Korp.Faturamento.Infrastructure.Data;
-using Korp.Faturamento.Infrastructure.Repositories;
-using Korp.Shared.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Microsoft.AspNetCore.Builder;
 
+// Namespaces reais com o prefixo Korp (Ajuste caso o seu projeto não use Korp. no início)
+using Korp.Faturamento.Infrastructure.Data;
+using Korp.Faturamento.Domain.Repositories;
+using Korp.Faturamento.Infrastructure.Repositories;
+using Korp.Faturamento.Application.Services;
+using Korp.Shared.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar Serilog para logging
+// Configurar Serilog
 builder.Host.UseSerilog((context, configuration) =>
 {
     configuration
@@ -19,21 +19,27 @@ builder.Host.UseSerilog((context, configuration) =>
         .WriteTo.File("logs/faturamento-.txt", rollingInterval: RollingInterval.Day);
 });
 
-// Configurar DbContext
+// Configurar DbContext com Resiliência no MySQL
+var connectionString = builder.Configuration.GetConnectionString("FaturamentoDatabase")
+    ?? throw new InvalidOperationException("Connection string 'FaturamentoDatabase' não encontrada.");
+
 builder.Services.AddDbContext<FaturamentoDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("FaturamentoDatabase")
-        ?? throw new InvalidOperationException("Connection string 'FaturamentoDatabase' not found.");
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-});
+    options.UseMySql(
+        connectionString,
+        new MySqlServerVersion(new Version(8, 0, 30)),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        )
+    ));
 
-// Registrar serviços de aplicação
-builder.Services.AddScoped<NotaFiscalApplicationService>();
+// Injeção de Dependências
 builder.Services.AddScoped<INotaFiscalRepository, NotaFiscalRepository>();
+builder.Services.AddScoped<NotaFiscalApplicationService>();
 
-// Registrar HttpClient para EstoqueService
-var estoqueBaseUrl = builder.Configuration["Urls:EstoqueApi"]
-    ?? throw new InvalidOperationException("Estoque API URL not configured.");
+// Configuração do Client HTTP para comunicação síncrona com o Estoque
+var estoqueBaseUrl = builder.Configuration["Urls:EstoqueApi"] ?? "http://localhost:5001";
 
 builder.Services
     .AddHttpClient<IEstoqueService, EstoqueHttpService>(client =>
@@ -42,7 +48,6 @@ builder.Services
         client.Timeout = TimeSpan.FromSeconds(5);
     });
 
-// Configurar CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -53,17 +58,36 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Registro do serviço de aplicação
+builder.Services.AddScoped<NotaFiscalApplicationService>();
+
+// Configuração do HttpClient para comunicação síncrona com Estoque com timeout curto
+builder.Services.AddHttpClient("EstoqueClient", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Urls:EstoqueApi"] ?? "http://localhost:5001");
+    client.Timeout = TimeSpan.FromSeconds(5); // Timeout curto explícito conforme edital
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Executar migrations automaticamente
+// Aplicação de Migrations no Startup
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<FaturamentoDbContext>();
-    dbContext.Database.Migrate();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<FaturamentoDbContext>();
+        dbContext.Database.Migrate();
+        logger.LogInformation("Conexão com MySQL de Faturamento estabelecida com sucesso.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Erro ao aplicar migrations ou conectar ao MySQL no Faturamento.");
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -76,7 +100,7 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthorization();
 
-// Middleware de tratamento de exceções
+// Middleware Global de Erros de Negócio e Integração
 app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
@@ -84,32 +108,29 @@ app.UseExceptionHandler(errorApp =>
         var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
         context.Response.ContentType = "application/json";
 
-        var response = new { mensagem = "Erro desconhecido" };
+        var response = new { mensagem = "Erro interno no servidor." };
 
-        if (exception is NegocioException)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { mensagem = exception.Message };
-        }
-        else if (exception is ValidacaoException)
+        if (exception is NegocioException || exception is ValidacaoException)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             response = new { mensagem = exception.Message };
         }
         else if (exception is IntegracaoException)
         {
-            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            response = new { mensagem = exception.Message };
+            context.Response.StatusCode = StatusCodes.Status502BadGateway;
+            response = new { mensagem = "Falha de integração com o serviço de Estoque. A nota permanece Aberta." };
         }
         else
         {
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            app.Logger.LogError(exception, "Erro não tratado");
+            app.Logger.LogError(exception, "Erro não tratado no Faturamento API");
         }
 
         await context.Response.WriteAsJsonAsync(response);
     });
 });
+
+
 
 app.MapControllers();
 
