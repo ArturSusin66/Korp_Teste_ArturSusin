@@ -1,63 +1,47 @@
-using Microsoft.AspNetCore.Builder;
-using Korp.Estoque.Application.Services;
-using Korp.Estoque.Domain.Repositories;
-using Korp.Estoque.Infrastructure.Data;
-using Korp.Estoque.Infrastructure.Repositories;
-using Korp.Shared.Exceptions;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
-using Microsoft.AspNetCore.Builder;
-
+using Korp.StockService.Data;
+using Korp.StockService.Repositories;
+using Korp.StockService.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar Serilog para logging
-builder.Host.UseSerilog((context, configuration) =>
-{
-    configuration
-        .MinimumLevel.Information()
-        .WriteTo.Console()
-        .WriteTo.File("logs/estoque-.txt", rollingInterval: RollingInterval.Day);
-});
-
-// Configurar serviços
+// Configuração do DbContext
 builder.Services.AddDbContext<EstoqueDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("EstoqueDatabase")
-        ?? throw new InvalidOperationException("Connection string 'EstoqueDatabase' not found.");
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-});
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("EstoqueDatabase"),
+        new MySqlServerVersion(new Version(8, 0, 21))
+    ));
 
-// Registrar serviços de aplicação
-builder.Services.AddScoped<ProdutoApplicationService>();
-
-// Registrar repositórios
-builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
-
-// Configurar CORS
+// Configuração de CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:4200")
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
+    options.AddPolicy("AllowAngular",
+        builder =>
+        {
+            builder.WithOrigins("http://localhost:4200")
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
 });
 
+// Registro de Dependências
+builder.Services.AddScoped<IEstoqueRepository, EstoqueRepository>();
+builder.Services.AddScoped<IEstoqueService, EstoqueService>();
+
+// Controllers
 builder.Services.AddControllers();
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Korp.StockService", Version = "v1" });
+});
 
 var app = builder.Build();
 
-// Executar migrations automaticamente
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<EstoqueDbContext>();
-    dbContext.Database.Migrate();
-}
-
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -65,39 +49,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
+app.UseCors("AllowAngular");
 app.UseAuthorization();
-
-// Middleware de tratamento de exceções
-app.UseExceptionHandler(errorApp =>
-{
-    errorApp.Run(async context =>
-    {
-        var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
-        context.Response.ContentType = "application/json";
-
-        var response = new { mensagem = "Erro desconhecido" };
-
-        if (exception is NegocioException)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { mensagem = exception.Message };
-        }
-        else if (exception is ValidacaoException)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { mensagem = exception.Message };
-        }
-        else
-        {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            app.Logger.LogError(exception, "Erro não tratado");
-        }
-
-        await context.Response.WriteAsJsonAsync(response);
-    });
-});
-
 app.MapControllers();
+
+// Migrate database
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<EstoqueDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.Run();
