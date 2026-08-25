@@ -92,13 +92,7 @@ Principais componentes:
 - Camada de persistência de dados
 - Serviços auxiliares e integrações
 
-## Melhorias Futuras
 
-- Testes automatizados
-- Pipeline CI/CD
-- Observabilidade e monitoramento
-- Autenticação e autorização
-- Cobertura ampliada de cenários de negócio
 
 ## Autor
 
