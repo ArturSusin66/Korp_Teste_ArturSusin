@@ -38,7 +38,7 @@ public class EstoqueDbContext : DbContext
 
             entity.Property(p => p.AtualizadoEm);
 
-            // Índice único no código
+            
             entity.HasIndex(p => p.Codigo)
                 .IsUnique();
         });

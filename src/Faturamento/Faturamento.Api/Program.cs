@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-// Namespaces reais com o prefixo Korp (Ajuste caso o seu projeto não use Korp. no início)
 using Korp.Faturamento.Infrastructure.Data;
 using Korp.Faturamento.Domain.Repositories;
 using Korp.Faturamento.Infrastructure.Repositories;
@@ -10,7 +9,7 @@ using Korp.Shared.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar Serilog
+
 builder.Host.UseSerilog((context, configuration) =>
 {
     configuration
@@ -19,7 +18,7 @@ builder.Host.UseSerilog((context, configuration) =>
         .WriteTo.File("logs/faturamento-.txt", rollingInterval: RollingInterval.Day);
 });
 
-// Configurar DbContext com Resiliência no MySQL
+// Configurar DbContext 
 var connectionString = builder.Configuration.GetConnectionString("FaturamentoDatabase")
     ?? throw new InvalidOperationException("Connection string 'FaturamentoDatabase' não encontrada.");
 

@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class FaturamentoService {
-  private apiUrl = environment.faturamentoApiUrl + '/notas-fiscais';
+  private apiUrl = `${environment.faturamentoApiUrl}/notas`
   
   constructor(private http: HttpClient) { }
 

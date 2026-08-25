@@ -6,17 +6,17 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Configurar Conexão com MySQL
+//  Conexão com MySQL
 var connectionString = builder.Configuration.GetConnectionString("EstoqueDatabase");
 
 builder.Services.AddDbContext<EstoqueDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// 2. Injeção de Dependências
+//  Injeção de Dependências
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 builder.Services.AddScoped<ProdutoApplicationService>();
 
-// 3. Configurar CORS para o Angular
+//  Configurar CORS para o Angular
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
@@ -31,17 +31,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// --- CRIAÇÃO DO APP (BUILD) ---
+// CRIAÇÃO DO APP (BUILD) 
 var app = builder.Build();
 
-// 4. Middlewares do Pipeline HTTP
+// Middlewares do Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseRouting(); // Habilita o roteamento do ASP.NET Core
+app.UseRouting(); 
 app.UseCors("AllowAngular");
 app.UseAuthorization();
 app.MapControllers();

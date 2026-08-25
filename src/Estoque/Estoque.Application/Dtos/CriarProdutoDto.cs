@@ -1,7 +1,7 @@
 namespace Korp.Estoque.Application.Dtos;
 
 /// <summary>
-/// DTO para criação de novo produto
+
 /// </summary>
 public class CriarProdutoDto
 {

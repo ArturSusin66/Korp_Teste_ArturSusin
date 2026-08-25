@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Korp.Estoque.Api.Controllers;
 
 /// <summary>
-/// Controller para gerenciamento de produtos
+
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -31,11 +31,12 @@ public class ProdutosController : ControllerBase
             _logger.LogInformation("Criando novo produto com código: {Codigo}", dto.Codigo);
             var resultado = await _service.CriarAsync(dto);
             
-            // Retorna HTTP 201 com o cabeçalho Location apontando para /api/produtos/{codigo}
+            
             return CreatedAtAction(nameof(Obter), new { codigo = resultado.Codigo }, resultado);
         }
 
     /// <summary>
+    
     /// Obter produto por código
     /// </summary>
     [HttpGet("{codigo}")]
@@ -51,6 +52,7 @@ public class ProdutosController : ControllerBase
     /// <summary>
     /// Listar todos os produtos
     /// </summary>
+    
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ProdutoResponseDto>>> Listar()
@@ -62,6 +64,7 @@ public class ProdutosController : ControllerBase
 
     /// <summary>
     /// Reduzir saldo de um produto
+   
     /// </summary>
     [HttpPost("{codigo}/reduzir-saldo")]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -1,7 +1,7 @@
 namespace Korp.Estoque.Application.Dtos;
 
 /// <summary>
-/// DTO para resposta de Produto nas APIs
+
 /// </summary>
 public class ProdutoResponseDto
 {
