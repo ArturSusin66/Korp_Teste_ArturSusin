@@ -5,10 +5,10 @@ services:
     image: mysql:8.0
     container_name: korp-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: senha123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: EstoqueDb
-      MYSQL_USER: korp
-      MYSQL_PASSWORD: senha123
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
