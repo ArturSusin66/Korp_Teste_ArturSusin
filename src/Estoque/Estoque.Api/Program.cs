@@ -6,17 +6,25 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//  Conexão com MySQL
+// Configurar Conexão com MySQL
 var connectionString = builder.Configuration.GetConnectionString("EstoqueDatabase");
 
 builder.Services.AddDbContext<EstoqueDbContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+    options.UseMySql(
+        connectionString,
+        ServerVersion.AutoDetect(connectionString),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        )
+    ));
 
-//  Injeção de Dependências
+// Injeção de Dependências
 builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 builder.Services.AddScoped<ProdutoApplicationService>();
 
-//  Configurar CORS para o Angular
+//  Configurar CORS (Liberando o Angular)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
@@ -31,18 +39,39 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CRIAÇÃO DO APP (BUILD) 
 var app = builder.Build();
 
-// Middlewares do Pipeline HTTP
+// 4. Configuração do Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseRouting(); 
+// UseRouting/UseCors deve ficar antes dos endpoints/controllers
+app.UseRouting();
+
+// Aplica a política de CORS
 app.UseCors("AllowAngular");
+
 app.UseAuthorization();
+
 app.MapControllers();
+
+// Aplicação Segura de Migrations no Startup
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<EstoqueDbContext>();
+        dbContext.Database.Migrate();
+        logger.LogInformation("Conexão com MySQL estabelecida e Migrations aplicadas.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Erro ao conectar no MySQL ou aplicar migrations.");
+    }
+}
+
 app.Run();

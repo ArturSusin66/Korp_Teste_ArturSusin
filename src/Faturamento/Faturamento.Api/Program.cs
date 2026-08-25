@@ -107,28 +107,24 @@ app.UseExceptionHandler(errorApp =>
         var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
         context.Response.ContentType = "application/json";
 
-        var response = new { mensagem = "Erro interno no servidor." };
-
-        if (exception is NegocioException || exception is ValidacaoException)
+        // Se for erro de valor inválido ou regra de negócio, retorna status 400 (Bad Request)
+        if (exception is NegocioException || exception is ValidacaoException || exception is ArgumentException)
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            response = new { mensagem = exception.Message };
+            await context.Response.WriteAsJsonAsync(new { mensagem = exception.Message });
         }
         else if (exception is IntegracaoException)
         {
             context.Response.StatusCode = StatusCodes.Status502BadGateway;
-            response = new { mensagem = "Falha de integração com o serviço de Estoque. A nota permanece Aberta." };
+            await context.Response.WriteAsJsonAsync(new { mensagem = "Falha ao comunicar com o Estoque." });
         }
         else
         {
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            app.Logger.LogError(exception, "Erro não tratado no Faturamento API");
+            await context.Response.WriteAsJsonAsync(new { mensagem = "Erro interno no servidor." });
         }
-
-        await context.Response.WriteAsJsonAsync(response);
     });
 });
-
 
 
 app.MapControllers();
